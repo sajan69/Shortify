@@ -44,7 +44,8 @@ export function ShortifyComponent() {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500))
-      const shortened = `https://short.ify/${Math.random().toString(36).substr(2, 6)}`
+      const shortCode = Math.random().toString(36).substr(2, 6)
+      const shortened = `https://shortify.vercel.app/${shortCode}`
       setShortUrl(shortened)
     } catch (err) {
       setError('An error occurred while shortening the URL')
