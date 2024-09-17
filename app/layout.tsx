@@ -16,6 +16,8 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "Shortify",
   description: "Trim your URLs with style!",
+  // favicon: "./public/favicon.ico",
+  
 };
 
 export default function RootLayout({
