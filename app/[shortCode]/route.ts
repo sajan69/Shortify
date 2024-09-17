@@ -1,14 +1,41 @@
-// app/[shortCode]/route.ts
 import { NextResponse } from 'next/server';
-import { getLongUrl } from '@/utils/fileStorage';
+import clientPromise from '@/lib/mongodb';
 
-export async function GET(request: Request, { params }: { params: { shortCode: string } }) {
-  const { shortCode } = params;
-  const longUrl = getLongUrl(shortCode);
+export async function GET(req: Request, { params }: { params: { shortCode: string } }) {
+  try {
+    const { shortCode } = params;
 
-  if (longUrl) {
+    if (!shortCode) {
+      return NextResponse.json({ error: 'Short code is required' }, { status: 400 });
+    }
+
+    // Connect to MongoDB
+    const client = await clientPromise;
+    if (!client) {
+      return NextResponse.json({ error: 'Failed to connect to the database' }, { status: 500 });
+    }
+    const db = client.db('shortify');
+    const collection = db.collection('urls');
+
+    // Find the long URL by shortCode
+    const urlDoc = await collection.findOne({ shortCode });
+
+    if (!urlDoc || !urlDoc.longUrl) {
+      return NextResponse.redirect(new URL('/404', req.url));
+    }
+
+    const longUrl = urlDoc.longUrl;
+
+    // Ensure that the long URL is valid and absolute
+    if (!longUrl.startsWith('http://') && !longUrl.startsWith('https://')) {
+      return NextResponse.json({ error: 'Malformed URL' }, { status: 400 });
+    }
+
+    // Redirect to the long URL
     return NextResponse.redirect(longUrl);
-  } else {
-    return NextResponse.redirect('/404'); // Redirect to a 404 page if URL not found
+
+  } catch (error) {
+    console.error('Error during URL redirection:', error);
+    return NextResponse.json({ error: 'Failed to redirect to the URL' }, { status: 500 });
   }
 }
