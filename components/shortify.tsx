@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { AlertCircle, Link as LinkIcon, Moon, Sun, Scissors, Share2 } from "lucide-react"
+import { AlertCircle, Link as LinkIcon, Moon, Sun, Scissors, Share2, Check, Copy } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Tooltip,
@@ -13,6 +13,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
+// Shared database for storing shortened URLs
+
+
+
+
+
 export function ShortifyComponent() {
   const [longUrl, setLongUrl] = useState('')
   const [shortUrl, setShortUrl] = useState('')
@@ -20,6 +26,7 @@ export function ShortifyComponent() {
   const [error, setError] = useState('')
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [showShareTooltip, setShowShareTooltip] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (isDarkMode) {
@@ -29,30 +36,48 @@ export function ShortifyComponent() {
     }
   }, [isDarkMode])
 
+  
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setShortUrl('')
-
+    e.preventDefault();
+    setError('');
+    setShortUrl('');
+  
     if (!isValidUrl(longUrl)) {
-      setError('Please enter a valid URL')
-      return
+      setError('Please enter a valid URL');
+      return;
     }
-
-    setIsLoading(true)
-
+  
+    setIsLoading(true);
+  
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      const shortCode = Math.random().toString(36).substr(2, 6)
-      const shortened = `https://shortify.vercel.app/${shortCode}`
-      setShortUrl(shortened)
+      // Simulate a delay for demonstration
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Generate a short code
+      const shortCode = Math.random().toString(36).substr(2, 6);
+      const shortened = `${window.location.origin}/${shortCode}`;
+      
+      // Send POST request to save the URL mapping
+      const response = await fetch('/api/save-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ shortCode, longUrl }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to save URL');
+      }
+  
+      setShortUrl(shortened);
     } catch (err) {
-      setError('An error occurred while shortening the URL')
+      setError('An error occurred while shortening the URL');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+  
 
   const isValidUrl = (url: string) => {
     try {
@@ -79,6 +104,12 @@ export function ShortifyComponent() {
         setTimeout(() => setShowShareTooltip(false), 2000)
       }).catch(console.error);
     }
+  }
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shortUrl).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(console.error);
   }
 
   return (
@@ -168,24 +199,41 @@ export function ShortifyComponent() {
 
             {shortUrl && (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="mt-6 p-4 bg-gradient-to-r from-green-400 to-blue-500 rounded-lg shadow-md"
-              >
-                <p className="text-sm font-medium text-white mb-2">Your shortened URL is ready!</p>
-                <div className="flex items-center space-x-2 bg-white dark:bg-gray-800 p-2 rounded">
-                  <LinkIcon size={16} className="text-purple-500 dark:text-purple-400" />
-                  <a
-                    href={shortUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-purple-600 dark:text-purple-400 hover:underline break-all font-medium"
-                  >
-                    {shortUrl}
-                  </a>
-                </div>
-              </motion.div>
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="mt-6 p-4 bg-gradient-to-r from-green-400 to-blue-500 rounded-lg shadow-md"
+            >
+              <p className="text-sm font-medium text-white mb-2">Your shortened URL is ready!</p>
+              <div className="flex items-center space-x-2 bg-white dark:bg-gray-800 p-2 rounded">
+                <LinkIcon size={16} className="text-purple-500 dark:text-purple-400" />
+                <a
+                  href={shortUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-purple-600 dark:text-purple-400 hover:underline break-all font-medium flex-grow"
+                >
+                  {shortUrl}
+                </a>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleCopy}
+                        className="text-purple-500 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-200"
+                      >
+                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{copied ? 'Copied!' : 'Copy to clipboard'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </motion.div>
             )}
           </AnimatePresence>
         </CardContent>
