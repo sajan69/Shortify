@@ -11,6 +11,9 @@ export async function POST(req: Request) {
 
     // Connect to MongoDB and get the client
     const client = await clientPromise;
+    if (!client) {
+      return NextResponse.json({ error: 'Failed to connect to database' }, { status: 500 });
+    }
     const db = client.db('shortify'); // Specify the correct DB name
     const collection = db.collection('urls');
 
