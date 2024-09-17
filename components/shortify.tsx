@@ -50,14 +50,10 @@ export function ShortifyComponent() {
     setIsLoading(true);
   
     try {
-      // Simulate a delay for demonstration
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Generate a short code
       const shortCode = Math.random().toString(36).substr(2, 6);
       const shortened = `${window.location.origin}/${shortCode}`;
-      
-      // Send POST request to save the URL mapping
+  
+      // Save to MongoDB via API
       const response = await fetch('/api/save-url', {
         method: 'POST',
         headers: {
@@ -66,11 +62,12 @@ export function ShortifyComponent() {
         body: JSON.stringify({ shortCode, longUrl }),
       });
   
-      if (!response.ok) {
-        throw new Error('Failed to save URL');
+      if (response.ok) {
+        setShortUrl(shortened);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to save URL');
       }
-  
-      setShortUrl(shortened);
     } catch (err) {
       setError('An error occurred while shortening the URL');
     } finally {
